@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- mybatis 동작설정 -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://mybatis.org/schema/mybatis-spring 
+	http://mybatis.org/schema/mybatis-spring-1.2.xsd">
+       
+       <!-- DB 연결속성 파일 -->
+       <bean id="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+			<property name="locations" value="/WEB-INF/mybatis/oracle_db.properties"/>
+		</bean>
+       
+       <!-- DB 연결설정 -->
+       <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+			<property name="driverClassName" value="${jdbc.driverClassName}" />
+			<property name="url" value="${jdbc.url}" />
+			<property name="username" value="${jdbc.username}" />
+			<property name="password" value="${jdbc.password}" />
+			<property name="validationQuery" value="${jdbc.validationQuery}" />
+		</bean>
+		
+		<!-- log4j 설정 -->
+		<bean id="Log4jDataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+			<constructor-arg ref="dataSource"/>
+			<property name="logFormatter">
+				<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+					<property name="loggingType" value="MULTI_LINE"/>
+					<property name="sqlPrefix" value="SQL : "/>
+				</bean>
+			</property>
+		</bean>
+		
+		<!-- DB 작업설정 -->
+		<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+			<property name="dataSource" ref="Log4jDataSource" />
+			<property name="mapperLocations" value="classpath*:com/web/bdnet/mapper/*.xml"/>
+			<property name="configLocation" value="/WEB-INF/mybatis/mybatis-config.xml"/>
+			<property name="transactionFactory">
+				<bean class="org.apache.ibatis.transaction.managed.ManagedTransactionFactory" />
+			</property>	
+		</bean>
+		
+		<!-- Controller에서 DB 작업을 할 수 있도록 설정 -->
+		<bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+			<constructor-arg ref="sqlSessionFactory" />
+		</bean>
+</beans>

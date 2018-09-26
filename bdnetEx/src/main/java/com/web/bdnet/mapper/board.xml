@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 대상 테이블 : bdn_board, bdn_file -->
+<mapper namespace="Board">
+	<!-- 마지막 식별번호를 조회한다. -->
+	<select id="selectBoardMaxNo" resultType="int">
+		SELECT NVL(MAX(brd_no), 0) FROM bdn_board
+	</select>
+	
+	<!-- 하나의 게시글을 입력한다. -->
+	<insert id="insertBoardOne" parameterType="BoardVO" useGeneratedKeys="false">
+		INSERT INTO bdn_board 
+		(BRD_NO, BRD_TITLE, BRD_CONTENT, BRD_WRITER, BRD_HIT, BRD_DATE) 
+		VALUES 
+		(#{brd_no}, #{brd_title}, #{brd_content}, #{brd_writer}, 0, SYSDATE)
+	</insert>
+	
+	<!-- 게시글의 파일들을 입력한다. -->
+	<insert id="insertBoardFile" parameterType="FileVO" useGeneratedKeys="false">
+		INSERT INTO bdn_file
+		(FI_NO, BRD_NO, FI_NAME1, FI_CONTENT1, FI_NAME2, FI_CONTENT2, FI_NAME3, FI_CONTENT3, FI_DATE) 
+		VALUES 
+		(SEQ_BDN_FILE_NO.NEXTVAL, #{brd_no}, #{fi_name1, jdbcType=VARCHAR}, #{fi_content1, jdbcType=BLOB}, #{fi_name2, jdbcType=VARCHAR}, #{fi_content2, jdbcType=BLOB}, #{fi_name3, jdbcType=VARCHAR}, #{fi_content3, jdbcType=BLOB}, SYSDATE)
+	</insert>
+	
+	<!-- 전체 게시글 개수를 조회한다. -->
+	<select id="selectBoardTotPage" parameterType="java.util.Map" resultType="int">
+		SELECT COUNT(*) 
+		FROM bdn_board 
+		WHERE ${type} LIKE '%' || #{text} || '%'
+	</select>
+	
+	<!-- 해당 페이지의 게시글을 조회한다. -->
+	<select id="selectBoardList" parameterType="java.util.Map" resultType="BoardVO">
+		SELECT * 
+		FROM (
+			SELECT brd_no, brd_title, brd_content, brd_writer, TO_CHAR(brd_hit, '999,999,999,999') brd_hit, TO_CHAR(brd_date, 'YYYY-MM-DD') brd_date, ROW_NUMBER() OVER (ORDER BY brd_no DESC) rown 
+			FROM bdn_board
+			WHERE ${type} LIKE '%' || #{text} || '%') 
+		WHERE rown BETWEEN #{page} AND #{page}+9 
+	</select>
+	
+	<!-- 하나의 게시글 정보를 조회한다. -->
+	<select id="selectBoardOne" parameterType="int" resultType="BoardVO">
+		SELECT b.brd_no, brd_title, brd_content, brd_writer, TO_CHAR(brd_hit, '999,999,999,999') brd_hit, TO_CHAR(brd_date, 'YYYY-MM-DD') brd_date, fi_no, fi_name1, fi_name2, fi_name3 
+		FROM bdn_board b 
+		LEFT OUTER JOIN bdn_file f 
+		ON b.brd_no = f.brd_no 
+		WHERE b.brd_no=#{no}
+	</select>
+	
+	<!-- 이전 게시글 번호를 조회한다. -->
+	<select id="selectBoardPrev" parameterType="int" resultType="int">
+		SELECT NVL(MAX(brd_no), 0) 
+		FROM bdn_board 
+		WHERE brd_no <![CDATA[<]]> #{no}
+	</select>
+	
+	<!-- 다음 게시글 번호를 조회한다. -->
+	<select id="selectBoardNext" parameterType="int" resultType="int">
+		SELECT NVL(MIN(brd_no), 0) 
+		FROM bdn_board 
+		WHERE brd_no <![CDATA[>]]> #{no}
+	</select>
+	
+	<!-- 하나의 게시글 정보를 수정한다. -->
+	<update id="updateBoardOne" parameterType="BoardVO">
+		UPDATE bdn_board 
+		SET brd_title=#{brd_title}, brd_content=#{brd_content} 
+		WHERE brd_no=#{brd_no} 
+	</update>
+	
+	<!-- 조회수를 증가한다. -->
+	<update id="updateBoardHit" parameterType="int">
+		UPDATE bdn_board 
+		SET brd_hit=brd_hit+1 
+		WHERE brd_no=#{no}
+	</update>
+	
+	<resultMap type="FileVO" id="result">
+		<result column="fi_name1" property="fi_name1"/>
+		<result column="fi_content1" property="fi_content1" jdbcType="BLOB"/>
+		<result column="fi_name2" property="fi_name2"/>
+		<result column="fi_content2" property="fi_content2" jdbcType="BLOB"/>
+		<result column="fi_name3" property="fi_name3"/>
+		<result column="fi_content3" property="fi_content3" jdbcType="BLOB"/>
+	</resultMap>
+	<!-- 게시글의 파일들을 조회한다. -->
+	<select id="selectBoardFile" parameterType="int" resultMap="result">
+		SELECT * 
+		FROM bdn_file 
+		WHERE fi_no=#{no}
+	</select>
+</mapper>
