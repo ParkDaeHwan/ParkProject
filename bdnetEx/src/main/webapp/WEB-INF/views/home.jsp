@@ -7,7 +7,7 @@
 </head>
 <body>
 <h1>
-	Comfirm Commit!!!  
+	Push Confirm!!!  
 </h1>
 
 <P>  The time on the server is ${serverTime}. </P>
